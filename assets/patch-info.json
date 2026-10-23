@@ -1,0 +1,8 @@
+{
+  "sourceSha256": "4f41e62500fd6542f6e497bf71089db8a62e2d089504bbab1dc0b6f82b15f736",
+  "patchedSha256": "b9b409a7d86763930d67e59da30c5df9e45dcf4ab02b6f536939dede1514804e",
+  "bridgeSha256": "8763b3a39f48bf6079ff57b5539432bda6a7b17f4b71ae8d2e51a30cb3137de0",
+  "originalTagsUnchanged": true,
+  "insertedFrame": 6,
+  "insertedActionBytes": 5718
+}

@@ -1,0 +1,14 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {deflateSync} from 'node:zlib';import {encodeProgress,decodeProgress} from '../src/scene-codec.js';import {createRechargeController} from '../src/wallet.js';import {WhaleWallet,FLASH_GAME} from '../../../packages/dsh-gamecenter/staging/storage/whale-wallet.js';
+const progress=()=>({coins:0,stats:{allkilled:0,manhp:100,'武器槽1':'无','武器槽1_弹夹内子弹':0,'武器槽1_子弹数':0,'武器槽2':'无','武器槽2_弹夹内子弹':0,'武器槽2_子弹数':0,'武器槽4':'grenade','武器槽4_弹夹内子弹':1,'武器槽4_子弹数':2,'刀种':1,'刀威力':25,nickname:'小屁孩','主线任务解锁':1},world:{schemaVersion:1,frame:268,root:{hp:75},nodes:Array.from({length:1200},(_,i)=>({path:['gameworld',`enemy${i}`],depth:i,frame:1,transform:[i,10,100,100,0,100,true],vars:{hp:80}}))}});
+test('a large battle scene fits the unchanged bridge budget and survives debit and reopening',async()=>{
+ const source=progress();assert.ok(Buffer.byteLength(JSON.stringify(source))>128*1024);const encoded=await encodeProgress(source);assert.ok(Buffer.byteLength(JSON.stringify(encoded))<128*1024);assert.deepEqual(await decodeProgress(encoded),source);
+ const w=new WhaleWallet();w.observeUsage('fixture',{totalTokens:1_000_000});let applied;const c=createRechargeController({command:p=>Promise.resolve(w.command(p,FLASH_GAME)),apply:s=>applied=s});await c.load();await c.exchange(2,source);assert.equal(w.status().balance,8);assert.equal(applied.coins,20);assert.deepEqual(applied.world,source.world);const saved=w.command({action:'status'},FLASH_GAME).state;assert.equal(saved.world.encoding,'deflate-json-v1');assert.deepEqual((await decodeProgress(saved)).world,source.world);w.close();
+});
+test('Host rejects malformed/compressed oversized or unsafe scene data without replacing the last save',async()=>{
+ const w=new WhaleWallet(),source=await encodeProgress(progress());w.command({action:'saveGame',operationId:'first',expectedRevision:0,state:source},FLASH_GAME);
+ const bad={...source,world:{encoding:'deflate-json-v1',data:deflateSync(Buffer.alloc(1024*1024+1,32)).toString('base64')}};assert.throws(()=>w.command({action:'saveGame',operationId:'bad',expectedRevision:1,state:bad},FLASH_GAME),/解压/);
+ const invalid=progress();invalid.world.nodes[0].path=['gameworld','__proto__'];assert.throws(()=>w.command({action:'saveGame',operationId:'unsafe',expectedRevision:1,state:{...source,world:{encoding:'deflate-json-v1',data:deflateSync(JSON.stringify(invalid.world)).toString('base64')}}},FLASH_GAME),/场景对象/);assert.equal(w.command({action:'status'},FLASH_GAME).revision,1);w.close();
+});
+test('scene compression reserves the operation before any asynchronous work',async()=>{
+ const w=new WhaleWallet(),c=createRechargeController({command:p=>Promise.resolve(w.command(p,FLASH_GAME)),apply:()=>{}});await c.load();const saving=c.save(progress());await assert.rejects(c.save(progress()),/请先确认/);await saving;assert.equal(c.revision,1);w.close();
+});

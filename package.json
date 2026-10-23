@@ -1,0 +1,7 @@
+{
+  "name": "@dsh-games/crazy-flasher4",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "node scripts/build.mjs", "test": "node --test test/*.test.mjs"}
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "example.crazy-flasher4",
+  "name": "闪客快打4：枪林弹雨",
+  "categories": ["动作", "射击", "冒险"],
+  "version": "0.2.0",
+  "sdk": "^1.0.0",
+  "runtime": {"kind": "web", "entry": "dist/index.html"},
+  "permissions": {"storage": "game-scoped", "directNetwork": false}
+}
